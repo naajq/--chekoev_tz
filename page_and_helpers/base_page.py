@@ -22,11 +22,17 @@ class BasePage:
         self.open_main_page()
 
     def close(self):
+        """
+        Закрытие драйвера
+        :return:
+        """
         self.driver.close()
 
     def open_by_url(self, url: str):
         """
         Открыть страницу по ссылке
+        :param url:
+        :return:
         """
         self.driver.get(url)
         return self
@@ -34,6 +40,8 @@ class BasePage:
     def open_main_page(self, url: str = None):
         """
         Метод открывает страницу
+        :param url:
+        :return:
         """
         url = url or self.url
         self.driver.get(url)
@@ -44,33 +52,22 @@ class BasePage:
 
     def auth_person(self, person: dict, clean: bool=False):
         """
-        Метод авторизации
+        Метод авторизации в профиль
+        :param person:
+        :param clean:
+        :return:
         """
         self.set_value(locator=LoginPageLocators.LOGIN_INPUT, value=person["email"], clean=clean)
         self.set_value(locator=LoginPageLocators.PASSWORD_INPUT, value=person["password"], clean=clean)
         self.move_to_element_and_click(locator=LoginPageLocators.SUBMIT_BUTTON)
         return self
 
-    @staticmethod
-    def self_exception_case(err, locator=None):
-        error = err.__class__.__name__
-
-        match error:
-            case 'InvalidSelectorException':
-                raise Exception(f"Не валидный локатор {locator}")
-            case "TimeoutException":
-                raise Exception(f"Время ожидания вышло {locator}")
-            case 'NoSuchElementException':
-                raise Exception(f"Элемента нет на странице {locator}")
-            case 'InvalidArgumentException':
-                raise Exception(f"В метод передан не верный аргумент {locator}, возможно ожидали WebElement")
-            case _:
-                raise Exception("Неизвестная ошибка")
-
     @retry((TimeoutException, NoSuchElementException), tries=5, delay=2)
     def get_element_path(self, locator: str) -> WebElement:
         """
-            Найти элемент по локатору
+            Найти элемент на странице по локатору
+        :param locator:
+        :return:
         """
         try:
             return self.driver.find_element(By.XPATH, value=locator)
@@ -81,7 +78,9 @@ class BasePage:
 
     def get_elements_path(self, locator):
         """
-            Найти элементы по локатору
+            Найти все элементы по локатору
+        :param locator:
+        :return:
         """
         try:
             self.wait.until(EC.presence_of_all_elements_located(locator=(By.XPATH, locator)))
@@ -112,6 +111,11 @@ class BasePage:
 
     @retry((TimeoutException, NoSuchElementException), tries=5, delay=2)
     def get_text(self, locator) -> str:
+        """
+            Получить текст по локатору
+        :param locator:
+        :return:
+        """
         element = self.get_element_path(locator)
         text = element.text
         assert bool(text), "Текст пуст"
@@ -119,11 +123,20 @@ class BasePage:
 
     def get_text_element(self, element: WebElement) -> str:
         """
-        Получить текст элемента
+            Получить текст по элементу на странице
+        :param element:
+        :return:
         """
         return element.text
 
     def set_value(self, locator, value, clean=False):
+        """
+        Ввод текста в поле
+        :param locator:
+        :param value:
+        :param clean:
+        :return:
+        """
         if clean:
             self.get_element_path(locator=locator).clear()
         element = self.get_element_path(locator)
@@ -132,7 +145,9 @@ class BasePage:
 
     def clear_text_input(self, locator):
         """
-        Очистить поле
+            Очистить поле по локатору
+        :param locator:
+        :return:
         """
         for i in range(0, int(len(self.get_attribute_from_value(locator=locator, attribute_name='value'))) + 1):
             self.set_value(locator=locator, value=Keys.BACKSPACE)
@@ -141,8 +156,26 @@ class BasePage:
 
     def get_attribute_from_value(self, locator: str, attribute_name: str):
         """
-        Получить атребуты по локатору
+            Получить атребуты по локатору и имени атребута
+        :param locator:
+        :param attribute_name:
+        :return:
         """
         element = self.get_element_path(locator)
         return element.get_attribute(attribute_name)
 
+    @staticmethod
+    def self_exception_case(err, locator=None):
+        error = err.__class__.__name__
+
+        match error:
+            case 'InvalidSelectorException':
+                raise Exception(f"Не валидный локатор {locator}")
+            case "TimeoutException":
+                raise Exception(f"Время ожидания вышло {locator}")
+            case 'NoSuchElementException':
+                raise Exception(f"Элемента нет на странице {locator}")
+            case 'InvalidArgumentException':
+                raise Exception(f"В метод передан не верный аргумент {locator}, возможно ожидали WebElement")
+            case _:
+                raise Exception("Неизвестная ошибка")
